@@ -24,8 +24,20 @@ variable "public_subnet_cidr" {
   default     = "10.0.1.0/24"
 }
 
-variable "private_subnet_cidr" {
-  description = "CIDR block for the private subnet"
+variable "instance_type" {
+  description = "EC2 instance type"
   type        = string
-  default     = "10.0.2.0/24"
+  default     = "t3.micro"
+}
+
+variable "app_port" {
+  description = "Port the app is exposed on (host side)"
+  type        = number
+  default     = 80
+}
+
+variable "app_image" {
+  description = "Docker image for the shortly app"
+  type        = string
+  default     = "selase/shortly-app:latest"
 }
