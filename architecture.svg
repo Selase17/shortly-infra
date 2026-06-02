@@ -1,0 +1,160 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 580" font-family="'Segoe UI', system-ui, sans-serif">
+  <defs>
+    <style>
+      .title { font-size: 20px; font-weight: 700; fill: #1A2438; }
+      .sub { font-size: 11.5px; fill: #6B7590; }
+      .nslabel { font-size: 12px; font-weight: 700; fill: #B8784C; letter-spacing: 0.5px; }
+      .patternlabel { font-size: 13px; font-weight: 700; fill: #1A2438; }
+      .boxlabel { font-size: 12px; font-weight: 600; fill: #1A2438; }
+      .boxsub { font-size: 10px; fill: #6B7590; }
+      .annotation { font-size: 10px; fill: #9AA3B8; font-style: italic; }
+      .edge { stroke: #B8784C; stroke-width: 1.8; fill: none; }
+      .edge-dash { stroke: #9AA3B8; stroke-width: 1.4; fill: none; stroke-dasharray: 4 3; }
+      .divider { stroke: #D9D3C8; stroke-width: 1; stroke-dasharray: 6 4; }
+    </style>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#B8784C"/>
+    </marker>
+    <marker id="arr-grey" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#9AA3B8"/>
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="40" y="38" class="title">shortly-infra — Two Ways to Run a Container on AWS</text>
+  <text x="40" y="57" class="sub">Both patterns provision the same app via Terraform. EC2 gives OS-level control; Fargate abstracts the compute entirely.</text>
+
+  <!-- Vertical divider -->
+  <line x1="480" y1="75" x2="480" y2="555" class="divider"/>
+
+  <!-- ═══════════════════════════════ EC2 SIDE ═══════════════════════════════ -->
+  <text x="180" y="82" text-anchor="middle" class="patternlabel">Pattern A — EC2</text>
+  <text x="180" y="97" text-anchor="middle" class="sub">ec2/main.tf · variables.tf · outputs.tf</text>
+
+  <!-- Client -->
+  <rect x="40" y="115" width="100" height="42" rx="7" fill="#F4F1EB" stroke="#D9D3C8"/>
+  <text x="90" y="133" text-anchor="middle" class="boxlabel">Client</text>
+  <text x="90" y="148" text-anchor="middle" class="boxsub">curl / browser</text>
+  <path d="M140 136 L175 136" class="edge" marker-end="url(#arr)"/>
+  <text x="145" y="128" class="annotation">HTTP :80</text>
+
+  <!-- VPC box EC2 -->
+  <rect x="175" y="100" width="270" height="350" rx="10" fill="#FAFBFD" stroke="#326CE5" stroke-width="1.3"/>
+  <text x="195" y="120" class="nslabel">VPC  10.0.0.0/16</text>
+
+  <!-- SG -->
+  <rect x="190" y="128" width="240" height="44" rx="7" fill="#FBF3EA" stroke="#B8784C"/>
+  <text x="310" y="146" text-anchor="middle" class="boxlabel">Security Group</text>
+  <text x="310" y="160" text-anchor="middle" class="boxsub">ingress :80 • egress all</text>
+
+  <!-- EC2 instance -->
+  <rect x="190" y="188" width="240" height="130" rx="7" fill="#EAF0FB" stroke="#326CE5"/>
+  <text x="310" y="207" text-anchor="middle" class="boxlabel">EC2 t3.micro</text>
+  <text x="310" y="221" text-anchor="middle" class="boxsub">Amazon Linux 2023</text>
+  <text x="310" y="235" text-anchor="middle" class="boxsub">AMI via data source</text>
+
+  <!-- user-data inside EC2 -->
+  <rect x="205" y="245" width="210" height="62" rx="5" fill="white" stroke="#D9D3C8"/>
+  <text x="310" y="261" text-anchor="middle" class="boxsub" font-weight="600">user-data bootstrap</text>
+  <text x="310" y="276" text-anchor="middle" class="boxsub">dnf install docker</text>
+  <text x="310" y="290" text-anchor="middle" class="boxsub">redis:7.4-alpine container</text>
+  <text x="310" y="304" text-anchor="middle" class="boxsub">selase/shortly-app:latest</text>
+
+  <!-- subnet label -->
+  <text x="310" y="345" text-anchor="middle" class="annotation">public subnet 10.0.1.0/24</text>
+  <text x="310" y="359" text-anchor="middle" class="annotation">map_public_ip_on_launch = true</text>
+
+  <!-- IGW -->
+  <rect x="220" y="370" width="180" height="38" rx="7" fill="#FBF3EA" stroke="#B8784C"/>
+  <text x="310" y="385" text-anchor="middle" class="boxlabel">Internet Gateway</text>
+  <text x="310" y="399" text-anchor="middle" class="boxsub">route 0.0.0.0/0 → IGW</text>
+
+  <!-- tfsec badge EC2 -->
+  <rect x="190" y="420" width="240" height="24" rx="5" fill="#F0FFF4" stroke="#27AE60" stroke-width="1"/>
+  <text x="310" y="436" text-anchor="middle" font-size="10" fill="#27AE60" font-weight="600">✓ tfsec: No problems detected</text>
+
+  <!-- EC2 key facts -->
+  <rect x="175" y="465" width="270" height="80" rx="7" fill="#F7F2EC" stroke="#D9D3C8"/>
+  <text x="310" y="482" text-anchor="middle" class="boxsub" font-weight="600">What you provision</text>
+  <text x="195" y="497" class="boxsub">• AMI + OS + Docker install (user-data)</text>
+  <text x="195" y="511" class="boxsub">• IMDSv2 enforced · EBS encrypted</text>
+  <text x="195" y="525" class="boxsub">• Full OS control · SSH-capable</text>
+  <text x="195" y="539" class="boxsub">• Billing: per instance-hour</text>
+
+  <!-- ═══════════════════════════════ FARGATE SIDE ═══════════════════════════════ -->
+  <text x="720" y="82" text-anchor="middle" class="patternlabel">Pattern B — ECS Fargate</text>
+  <text x="720" y="97" text-anchor="middle" class="sub">fargate/main.tf · variables.tf · outputs.tf</text>
+
+  <!-- Client Fargate -->
+  <rect x="820" y="115" width="100" height="42" rx="7" fill="#F4F1EB" stroke="#D9D3C8"/>
+  <text x="870" y="133" text-anchor="middle" class="boxlabel">Client</text>
+  <text x="870" y="148" text-anchor="middle" class="boxsub">curl / browser</text>
+  <path d="M820 136 L785 136" class="edge" marker-end="url(#arr)"/>
+  <text x="790" y="128" class="annotation">HTTP :5000</text>
+
+  <!-- VPC box Fargate -->
+  <rect x="510" y="100" width="305" height="350" rx="10" fill="#FAFBFD" stroke="#326CE5" stroke-width="1.3"/>
+  <text x="530" y="120" class="nslabel">VPC  10.0.0.0/16</text>
+
+  <!-- ECS Cluster -->
+  <rect x="525" y="128" width="275" height="200" rx="7" fill="#FFF4E6" stroke="#E67E22" stroke-width="1.2"/>
+  <text x="662" y="146" text-anchor="middle" class="boxlabel">ECS Cluster (Fargate)</text>
+  <text x="662" y="159" text-anchor="middle" class="boxsub">no EC2 nodes — AWS manages compute</text>
+
+  <!-- Task definition -->
+  <rect x="538" y="165" width="249" height="150" rx="6" fill="white" stroke="#D9D3C8"/>
+  <text x="662" y="181" text-anchor="middle" class="boxsub" font-weight="600">Task Definition</text>
+  <text x="662" y="195" text-anchor="middle" class="boxsub">512 CPU · 1024 MB</text>
+
+  <!-- redis sidecar -->
+  <rect x="550" y="202" width="105" height="48" rx="5" fill="#FCEAEA" stroke="#C0392B"/>
+  <text x="602" y="220" text-anchor="middle" class="boxsub" font-weight="600">redis sidecar</text>
+  <text x="602" y="233" text-anchor="middle" class="boxsub">redis:7.4-alpine</text>
+  <text x="602" y="246" text-anchor="middle" class="boxsub">localhost:6379</text>
+
+  <!-- shortly container -->
+  <rect x="668" y="202" width="108" height="48" rx="5" fill="#EAF0FB" stroke="#326CE5"/>
+  <text x="722" y="220" text-anchor="middle" class="boxsub" font-weight="600">shortly app</text>
+  <text x="722" y="233" text-anchor="middle" class="boxsub">selase/shortly-app</text>
+  <text x="722" y="246" text-anchor="middle" class="boxsub">:latest · port 5000</text>
+
+  <!-- arrow redis to app -->
+  <path d="M655 226 L668 226" class="edge-dash" marker-end="url(#arr-grey)"/>
+
+  <!-- CW logs -->
+  <rect x="550" y="258" width="225" height="28" rx="5" fill="#F4F1EB" stroke="#D9D3C8"/>
+  <text x="662" y="276" text-anchor="middle" class="boxsub">CloudWatch logs · Container Insights ✓</text>
+
+  <!-- SGs Fargate -->
+  <rect x="525" y="315" width="130" height="44" rx="7" fill="#FBF3EA" stroke="#B8784C"/>
+  <text x="590" y="333" text-anchor="middle" class="boxlabel">App SG</text>
+  <text x="590" y="347" text-anchor="middle" class="boxsub">ingress :5000</text>
+
+  <rect x="665" y="315" width="130" height="44" rx="7" fill="#FBF3EA" stroke="#B8784C"/>
+  <text x="730" y="333" text-anchor="middle" class="boxlabel">Redis SG</text>
+  <text x="730" y="347" text-anchor="middle" class="boxsub">from app SG only</text>
+
+  <!-- subnet label fargate -->
+  <text x="662" y="378" text-anchor="middle" class="annotation">public subnet 10.0.3.0/24 · assign_public_ip=true</text>
+  <text x="662" y="392" text-anchor="middle" class="annotation">IAM execution role · AmazonECSTaskExecutionRolePolicy</text>
+
+  <!-- IGW Fargate -->
+  <rect x="572" y="400" width="180" height="38" rx="7" fill="#FBF3EA" stroke="#B8784C"/>
+  <text x="662" y="415" text-anchor="middle" class="boxlabel">Internet Gateway</text>
+  <text x="662" y="429" text-anchor="middle" class="boxsub">route 0.0.0.0/0 → IGW</text>
+
+  <!-- tfsec badge Fargate -->
+  <rect x="525" y="448" width="275" height="24" rx="5" fill="#F0FFF4" stroke="#27AE60" stroke-width="1"/>
+  <text x="662" y="464" text-anchor="middle" font-size="10" fill="#27AE60" font-weight="600">✓ tfsec: No problems detected</text>
+
+  <!-- Fargate key facts -->
+  <rect x="510" y="465" width="305" height="80" rx="7" fill="#F7F2EC" stroke="#D9D3C8"/>
+  <text x="662" y="482" text-anchor="middle" class="boxsub" font-weight="600">What you provision</text>
+  <text x="530" y="497" class="boxsub">• Container spec only — no AMI, no user-data</text>
+  <text x="530" y="511" class="boxsub">• ECS cluster + task def + service + IAM role</text>
+  <text x="530" y="525" class="boxsub">• AWS manages underlying compute entirely</text>
+  <text x="530" y="539" class="boxsub">• Billing: per vCPU/memory-second while running</text>
+
+  <!-- Bottom shared label -->
+  <text x="480" y="570" text-anchor="middle" class="sub">Both stacks: Terraform-provisioned VPC • security groups • IGW • routing • IaC security scanning with tfsec</text>
+</svg>
