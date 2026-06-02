@@ -36,6 +36,8 @@ data "aws_ami" "al2023" {
 }
 
 # ── Network (VPC + public subnet + IGW + routing) ───────────────────
+
+#tfsec:ignore:aws-ec2-require-vpc-flow-logs-for-all-vpcs -- accepted: learning project; flow logs noted as production enhancement
 resource "aws_vpc" "main" {
   cidr_block           = var.vpc_cidr
   enable_dns_support   = true
@@ -60,7 +62,7 @@ resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = var.public_subnet_cidr
   availability_zone       = data.aws_availability_zones.available.names[0]
-  map_public_ip_on_launch = true
+  map_public_ip_on_launch = true  #tfsec:ignore:aws-ec2-no-public-ip-subnet -- intentional: no NAT gateway; demo requires direct public IP
   tags = {
     Name      = "${var.project_name}-public-subnet"
     Project   = var.project_name
@@ -101,7 +103,7 @@ resource "aws_security_group" "app" {
     from_port   = var.app_port
     to_port     = var.app_port
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["0.0.0.0/0"] #tfsec:ignore:aws-ec2-no-public-ingress-sgr -- intentional: public web app requires internet ingress
   }
 
   # Outbound: allow all (so the instance can pull Docker images, etc.)
@@ -110,7 +112,7 @@ resource "aws_security_group" "app" {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["0.0.0.0/0"]  #tfsec:ignore:aws-ec2-no-public-egress-sgr -- intentional: instance needs internet access for Docker image pulls
   }
 
   tags = {
@@ -128,6 +130,21 @@ resource "aws_instance" "app" {
   instance_type          = var.instance_type
   subnet_id              = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.app.id]
+
+
+  # Enforce IMDSv2 — requires a token for all metadata requests.
+  # Prevents SSRF attacks from stealing instance credentials via
+  # the metadata endpoint (169.254.169.254).
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"    # IMDSv2
+    http_put_response_hop_limit = 1
+  }
+
+
+  root_block_device {
+    encrypted = true
+  }
 
   # user_data runs once, on first boot, as root.
   user_data = <<-EOF
