@@ -29,6 +29,7 @@ data "aws_availability_zones" "available" {
 # Each Terraform root manages its own network; in a real setup you'd
 # share a VPC via remote state references rather than duplicating it.
 
+#tfsec:ignore:aws-ec2-require-vpc-flow-logs-for-all-vpcs -- accepted: learning project
 resource "aws_vpc" "main" {
   cidr_block           = var.vpc_cidr
   enable_dns_support   = true
@@ -53,7 +54,7 @@ resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = var.public_subnet_cidr
   availability_zone       = data.aws_availability_zones.available.names[0]
-  map_public_ip_on_launch = true
+  map_public_ip_on_launch = true  #tfsec:ignore:aws-ec2-no-public-ip-subnet -- intentional: no NAT gateway; Fargate needs public IP for image pulls
   tags = {
     Name      = "${var.project_name}-fargate-public-subnet"
     Project   = var.project_name
@@ -95,7 +96,7 @@ resource "aws_security_group" "app" {
     from_port   = var.app_port
     to_port     = var.app_port
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["0.0.0.0/0"]  #tfsec:ignore:aws-ec2-no-public-ingress-sgr -- intentional: public web app
   }
 
   egress {
@@ -103,7 +104,7 @@ resource "aws_security_group" "app" {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["0.0.0.0/0"]  #tfsec:ignore:aws-ec2-no-public-egress-sgr -- intentional: Fargate needs internet for image pulls
   }
 
   tags = {
@@ -131,7 +132,7 @@ resource "aws_security_group" "redis" {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["0.0.0.0/0"]  #tfsec:ignore:aws-ec2-no-public-egress-sgr -- intentional: Fargate needs internet for image pulls
   }
 
   tags = {
@@ -145,6 +146,7 @@ resource "aws_security_group" "redis" {
 # Fargate tasks send logs to CloudWatch. We create the log groups
 # explicitly so Terraform manages (and destroys) them cleanly.
 
+#tfsec:ignore:aws-cloudwatch-log-group-customer-key -- accepted: AWS-managed encryption sufficient for 1-day retention learning logs
 resource "aws_cloudwatch_log_group" "app" {
   name              = "/ecs/${var.project_name}/app"
   retention_in_days = 1 # minimal retention — learning project
@@ -154,6 +156,7 @@ resource "aws_cloudwatch_log_group" "app" {
   }
 }
 
+#tfsec:ignore:aws-cloudwatch-log-group-customer-key -- accepted: AWS-managed encryption sufficient for 1-day retention learning logs
 resource "aws_cloudwatch_log_group" "redis" {
   name              = "/ecs/${var.project_name}/redis"
   retention_in_days = 1
@@ -196,6 +199,12 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
 
 resource "aws_ecs_cluster" "main" {
   name = "${var.project_name}-cluster"
+
+  setting {
+    name  = "containerInsights"
+    value = "enabled"
+  }
+
   tags = {
     Project   = var.project_name
     ManagedBy = "Terraform"
